@@ -6,27 +6,31 @@ import asyncio
 import gspread
 from oauth2client.service_account import ServiceAccountCredentials
 import json
+import os
 
-# Bot Config (from you)
-BOT_TOKEN = "8025384223:AAEjuUYE5Gk_p5pjkQb1qODbFu8jtj2oibI"
+# Bot Config
+BOT_TOKEN = os.getenv("BOT_TOKEN") or "8025384223:AAEjuUYE5Gk_p5pjkQb1qODbFu8jtj2oibI"
 CHANNEL_ID = "@bot1_test_1234"
-ADMIN_ID = 1878312179  # ← Replace if your own Telegram ID is different
+ADMIN_ID = 1878312179  # apna telegram ID
 
 bot = Bot(token=BOT_TOKEN)
 dp = Dispatcher(bot)
 pst = timezone('Asia/Karachi')
 
-# Default placeholder
+# Default messages
 POSTS = ["❗️Please run /updatefromsheet first."] * 16
 
-# Load Google credentials from credentials.txt
+# Load Google credentials from environment or file
 def load_credentials():
-    with open("credentials.txt", "r") as f:
-        creds_data = json.load(f)
+    try:
+        creds_data = json.loads(os.getenv("GOOGLE_CREDS"))
+    except:
+        with open("credentials.json", "r") as f:
+            creds_data = json.load(f)
     scope = ['https://spreadsheets.google.com/feeds', 'https://www.googleapis.com/auth/drive']
     return ServiceAccountCredentials.from_json_keyfile_dict(creds_data, scope)
 
-# Fetch posts from Google Sheet
+# Google sheet se posts lena
 def fetch_posts_from_sheet():
     try:
         creds = load_credentials()
@@ -44,11 +48,11 @@ def fetch_posts_from_sheet():
         print(f"❌ Google Sheet Error: {e}")
         return None
 
-# Empty keyboard
+# Keyboard (optional)
 def get_post_keyboard():
     return InlineKeyboardMarkup()
 
-# Auto-post hourly
+# Har ghante post karna
 async def send_hourly_post():
     post_count = 0
     while post_count < 16:
@@ -66,7 +70,7 @@ async def send_hourly_post():
             print(f"❌ Post error: {e}")
         await asyncio.sleep(3600)
 
-# Command handler
+# Commands
 @dp.message_handler()
 async def handle_command(message: types.Message):
     if message.from_user.id != ADMIN_ID:
@@ -100,7 +104,7 @@ async def handle_command(message: types.Message):
     else:
         await message.reply("🤖 Commands:\n/updatefromsheet\n/post 1-16\n/testpost")
 
-# Main bot loop
+# Run
 async def main():
     await asyncio.gather(
         dp.start_polling(),
@@ -109,3 +113,4 @@ async def main():
 
 if __name__ == "__main__":
     asyncio.run(main())
+        
